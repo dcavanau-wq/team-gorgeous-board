@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team Gorgeous · Shift Streak Scoreboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+background:linear-gradient(135deg,#160a2b 0%,#241247 45%,#3a1d5e 100%);background-attachment:fixed;color:#f3ecff;min-height:100vh;padding:20px 14px 60px}
+.wrap{max-width:1080px;margin:0 auto}
+header{text-align:center;margin-bottom:14px}
+h1{font-size:clamp(26px,5vw,40px);font-weight:800;letter-spacing:-.5px;
+background:linear-gradient(90deg,#ff9a3c,#ff6ec7,#a78bfa,#ff9a3c);background-size:250% auto;
+-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:sh 6s linear infinite}
+@keyframes sh{to{background-position:250% center}}
+.sub{color:#cbb9ea;font-size:14px;margin-top:4px}
+.tabs{display:flex;gap:8px;justify-content:center;margin:14px 0 6px}
+.tab{padding:8px 22px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
+color:#e7ddff;font-weight:700;font-size:14px;cursor:pointer;transition:.2s}
+.tab.active{background:linear-gradient(90deg,#ff6ec7,#a78bfa);border-color:transparent;color:#fff;box-shadow:0 4px 16px rgba(167,139,250,.4)}
+.weeknav{display:flex;align-items:center;justify-content:center;gap:12px;margin:8px 0 2px;flex-wrap:wrap}
+.weeknav button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#fff;
+width:36px;height:36px;border-radius:50%;font-size:17px;cursor:pointer;transition:.15s}
+.weeknav button:hover:not(:disabled){background:rgba(255,255,255,.18)}
+.weeknav button:disabled{opacity:.3;cursor:default}
+.weeknav .wlabel{font-weight:700;font-size:15px;min-width:150px;text-align:center;color:#ffd9a0;cursor:pointer;border-bottom:1px dotted rgba(255,217,160,.5)}
+.weeknav .today{width:auto;border-radius:999px;padding:0 14px;height:36px;font-size:13px;font-weight:700;color:#ffd9a0}
+.navhint{text-align:center;font-size:11px;color:#a58fce;margin-bottom:16px}
+.podium{display:flex;gap:10px;justify-content:center;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap}
+.pod{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px 16px;text-align:center;min-width:120px}
+.pod .rank{font-size:12px;color:#cbb9ea;font-weight:700}
+.pod .pn{font-weight:800;margin:3px 0;font-size:15px}
+.pod .ps{font-size:22px;font-weight:800;color:#ff9a3c}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.card{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:15px 16px 13px;
+box-shadow:0 6px 22px rgba(0,0,0,.22);position:relative;overflow:hidden}
+.card.hot{border-color:rgba(255,154,60,.45);box-shadow:0 6px 26px rgba(255,120,40,.18)}
+.crow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.nm{font-weight:800;font-size:17px}
+.badge{font-size:22px}
+.streak{display:flex;align-items:baseline;gap:6px;margin:8px 0 2px}
+.streak .fire{font-size:26px}.streak .num{font-size:30px;font-weight:800;color:#ff9a3c;line-height:1}
+.streak .lbl{font-size:12px;color:#cbb9ea}
+.prog{height:7px;border-radius:6px;background:rgba(255,255,255,.12);margin:9px 0 3px;overflow:hidden}
+.prog>div{height:100%;border-radius:6px;background:linear-gradient(90deg,#ff9a3c,#ff6ec7);transition:width .6s}
+.ptxt{font-size:11px;color:#cbb9ea;margin-bottom:9px}
+.stats{display:flex;gap:6px;margin:4px 0 8px;flex-wrap:wrap}
+.chip{flex:1;min-width:62px;background:rgba(255,255,255,.05);border-radius:9px;padding:6px 4px;text-align:center}
+.chip .v{font-weight:800;font-size:16px}.chip .k{font-size:9.5px;color:#bda9e0;text-transform:uppercase;letter-spacing:.4px}
+.chip.c .v{color:#8be29a}.chip.p .v{color:#ffd86b}.chip.b .v{color:#ff9a3c}
+.cwk{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:2px 0 5px;padding-top:6px;border-top:1px solid rgba(255,255,255,.07)}
+.cwk .cl{font-size:11px;font-weight:700;color:#bda9e0}
+.cwk .cl.off{color:#ff9a3c}
+.cwk .mn{display:flex;gap:4px;align-items:center}
+.cwk .mn button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#fff;width:22px;height:22px;border-radius:6px;font-size:11px;cursor:pointer;line-height:1;padding:0}
+.cwk .mn button:disabled{opacity:.3;cursor:default}
+.cwk .rst{background:none;border:none;color:#ff9a3c;font-size:13px;cursor:pointer;width:auto!important}
+.days{display:flex;gap:4px;justify-content:space-between}
+.day{flex:1;text-align:center}
+.day .dh{font-size:9px;color:#bda9e0;line-height:1.15;margin-bottom:3px}
+.day .dh b{display:block;color:#e7ddff;font-size:10px}
+.box{display:flex;flex-direction:column;gap:2px}
+.b2{height:15px;border-radius:4px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:9px;color:#7d6ba6}
+.b2.on{background:linear-gradient(90deg,#42c767,#2fa653);color:#fff}
+.b2.miss{background:rgba(255,90,90,.22);color:#ff9a9a}
+.day.off .box{opacity:.28}.day.off .dh b{color:#7d6ba6}
+.day.closed .box{opacity:.15}
+.day.blk .dh,.day.blk .dh b{color:#5a4a7a}
+.b2.blkb{border:none;background:repeating-linear-gradient(45deg,rgba(255,255,255,.03),rgba(255,255,255,.03) 3px,rgba(255,255,255,.08) 3px,rgba(255,255,255,.08) 6px)}
+.legend{text-align:center;font-size:11px;color:#bda9e0;margin-top:18px}
+.legend b{color:#e7ddff}
+</style></head>
+<body><div class="wrap">
+<header><h1>🔥 Team Gorgeous</h1>
+<div class="sub">Shift Streak Scoreboard — post your start ▶ and end ■ every shift</div><div class="sub" id="upd" style="font-size:11px;opacity:.6"></div></header>
+<div class="tabs"><div class="tab active" data-role="Waxer">Waxers</div><div class="tab" data-role="GSA">GSAs</div></div>
+<div class="weeknav"><button id="prev">◀</button><div class="wlabel" id="wlabel" title="Click to reset everyone to the current week"></div><button id="next">▶</button><button id="today" class="today">⟳ This week</button></div>
+<div class="navhint">Team arrows move everyone · each card's own ◀ ▶ scrolls just that person · ⟳ or click the week to re-sync</div>
+<div class="podium" id="podium"></div>
+<div class="grid" id="grid"></div>
+<div class="legend">🔥 <b>streak</b> = days in a row you posted (start or end) · <b>complete</b> = both posted · <b>partial</b> = one posted · <b>best</b> = longest complete run ever · badges at 🥉3 ⭐7 🔥14 💎30 👑60</div>
+</div>
+<script>
+let DATA,LAST,role='Waxer',gWk=0;
+const cardWk={};            // person index -> week override
+const weekOf=idx=>(idx in cardWk)?cardWk[idx]:gWk;
+const dow=d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(d+'T00:00').getDay()];
+const md=d=>{const p=d.split('-');return p[1].replace(/^0/,'')+'/'+p[2].replace(/^0/,'')};
+window.cPrev=i=>{const w=weekOf(i);if(w>0){cardWk[i]=w-1;render();}};
+window.cNext=i=>{const w=weekOf(i);if(w<LAST){cardWk[i]=w+1;render();}};
+window.cReset=i=>{delete cardWk[i];render();};
+function gGo(w){gWk=Math.max(0,Math.min(LAST,w));for(const k in cardWk)delete cardWk[k];render();}
+function render(){
+  document.getElementById('wlabel').textContent='Team week: '+DATA.weeks[gWk].label;
+  document.getElementById('prev').disabled=gWk<=0;
+  document.getElementById('next').disabled=gWk>=LAST;
+  const ppl=DATA.people.map((p,idx)=>({p,idx})).filter(o=>o.p.role===role)
+     .sort((a,b)=>b.p.streak-a.p.streak||b.p.points-a.p.points);
+  const pod=document.getElementById('podium');pod.innerHTML='';
+  ['🥇','🥈','🥉'].forEach((m,i)=>{if(ppl[i]){const p=ppl[i].p;
+    pod.innerHTML+=`<div class="pod"><div class="rank">${m} longest active</div><div class="pn">${p.name.split(' ')[0]}</div><div class="ps">🔥 ${p.streak}</div></div>`;}});
+  const g=document.getElementById('grid');g.innerHTML='';
+  ppl.forEach(({p,idx})=>{
+    const w=weekOf(idx);const wkObj=DATA.weeks[w];const off=w!==gWk;
+    let boxes='';
+    wkObj.dates.forEach(d=>{
+      let st;
+      if(d<DATA.dataStart||d>DATA.dataEnd) st='BLOCKED';
+      else st=p.days[d]||'OFF';
+      let cls='day',s='',e='';
+      if(st==='BLOCKED'){cls+=' blk';s='<div class="b2 blkb"></div>';e='<div class="b2 blkb"></div>';}
+      else if(st==='CLOSED'){cls+=' closed';s=e='<div class="b2">·</div>';}
+      else if(st==='OFF'){cls+=' off';s='<div class="b2">▶</div>';e='<div class="b2">■</div>';}
+      else if(st==='B'){s='<div class="b2 on">▶</div>';e='<div class="b2 on">■</div>';}
+      else if(st==='S'){s='<div class="b2 on">▶</div>';e='<div class="b2">■</div>';}
+      else if(st==='E'){s='<div class="b2">▶</div>';e='<div class="b2 on">■</div>';}
+      else if(st==='X'){s='<div class="b2 miss">▶</div>';e='<div class="b2 miss">■</div>';}
+      boxes+=`<div class="${cls}"><div class="dh">${dow(d)}<b>${md(d)}</b></div><div class="box">${s}${e}</div></div>`;
+    });
+    const prog=Math.round(p.progress*100);
+    const nextTxt=p.toNext>0?`${p.toNext} day${p.toNext>1?'s':''} to ${p.nextEmoji}`:'max badge 👑';
+    const reset=off?`<button class="rst" onclick="cReset(${idx})" title="Back to team week">↺</button>`:'';
+    g.innerHTML+=`<div class="card ${p.streak>=7?'hot':''}">
+      <div class="crow"><div class="nm">${p.name}</div><div class="badge">${p.badge||''}</div></div>
+      <div class="streak"><span class="fire">🔥</span><span class="num">${p.streak}</span><span class="lbl">day streak</span></div>
+      <div class="prog"><div style="width:${prog}%"></div></div><div class="ptxt">${nextTxt}</div>
+      <div class="stats">
+        <div class="chip c"><div class="v">${p.complete}</div><div class="k">Complete</div></div>
+        <div class="chip p"><div class="v">${p.partial}</div><div class="k">Partial</div></div>
+        <div class="chip"><div class="v">${p.points}</div><div class="k">Points</div></div>
+        <div class="chip b"><div class="v">${p.longestComplete}</div><div class="k">Best run</div></div>
+      </div>
+      <div class="cwk"><span class="cl ${off?'off':''}">${wkObj.label}${off?' •':''}</span>
+        <span class="mn"><button ${w<=0?'disabled':''} onclick="cPrev(${idx})">◀</button>
+        <button ${w>=LAST?'disabled':''} onclick="cNext(${idx})">▶</button>${reset}</span></div>
+      <div class="days">${boxes}</div>
+    </div>`;
+  });
+}
+
+function init(){LAST=DATA.weeks.length-1;gWk=LAST;
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');role=t.dataset.role;render();});
+document.getElementById('prev').onclick=()=>gGo(gWk-1);
+document.getElementById('next').onclick=()=>gGo(gWk+1);
+document.getElementById('today').onclick=()=>gGo(LAST);
+document.getElementById('wlabel').onclick=()=>{for(const k in cardWk)delete cardWk[k];render();};
+render();
+
+}
+const DATA_URL='https://raw.githubusercontent.com/dcavanau-wq/team-gorgeous-board/main/data.json';
+fetch(DATA_URL+'?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{DATA=d;init();
+var u=document.getElementById('upd'); if(u&&d.updated){u.textContent='updated '+d.updated;}})
+.catch(e=>{document.getElementById('grid').innerHTML='<p style="text-align:center;color:#cbb9ea;padding:30px">Loading the latest streaks\u2026 give it a moment and refresh.</p>';});
+</script></body></html>
