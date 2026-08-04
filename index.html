@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Team Gorgeous · Shift Streak Scoreboard</title>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -12,6 +13,14 @@ background:linear-gradient(90deg,#ff9a3c,#ff6ec7,#a78bfa,#ff9a3c);background-siz
 -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:sh 6s linear infinite}
 @keyframes sh{to{background-position:250% center}}
 .sub{color:#cbb9ea;font-size:14px;margin-top:4px}
+.celebrate{position:sticky;top:8px;z-index:60;max-width:680px;margin:0 auto 12px;display:none;flex-direction:column;gap:8px}
+.cbar{position:relative;background:linear-gradient(90deg,#ff6ec7,#a78bfa);color:#fff;font-weight:800;text-align:center;padding:11px 42px;border-radius:14px;box-shadow:0 8px 26px rgba(167,139,250,.55);font-size:15px;animation:pop .5s ease}
+@keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes glow{0%,100%{box-shadow:0 8px 26px rgba(167,139,250,.55)}50%{box-shadow:0 10px 36px rgba(255,214,107,.95)}}
+.cbar.pulse{animation:pop .4s ease, glow 1.2s ease}
+.cbar .cx{position:absolute;right:9px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.28);border:none;color:#fff;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1}
+.morebtn{align-self:center;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#ffe9c2;font-weight:800;font-size:13px;padding:7px 16px;border-radius:999px;cursor:pointer}
+.replaybtn{display:none;margin:0 auto 16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:#ffd9a0;font-weight:700;font-size:12px;padding:6px 14px;border-radius:999px;cursor:pointer}
 .tabs{display:flex;gap:8px;justify-content:center;margin:14px 0 6px}
 .tab{padding:8px 22px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
 color:#e7ddff;font-weight:700;font-size:14px;cursor:pointer;transition:.2s}
@@ -33,6 +42,7 @@ width:36px;height:36px;border-radius:50%;font-size:17px;cursor:pointer;transitio
 .card{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:15px 16px 13px;
 box-shadow:0 6px 22px rgba(0,0,0,.22);position:relative;overflow:hidden}
 .card.hot{border-color:rgba(255,154,60,.45);box-shadow:0 6px 26px rgba(255,120,40,.18)}
+.card.celebrant{cursor:pointer;border-color:rgba(255,214,107,.6);box-shadow:0 6px 28px rgba(255,200,80,.30)}
 .crow{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .nm{font-weight:800;font-size:17px}
 .badge{font-size:22px}
@@ -67,20 +77,25 @@ box-shadow:0 6px 22px rgba(0,0,0,.22);position:relative;overflow:hidden}
 .b2.blkb{border:none;background:repeating-linear-gradient(45deg,rgba(255,255,255,.03),rgba(255,255,255,.03) 3px,rgba(255,255,255,.08) 3px,rgba(255,255,255,.08) 6px)}
 .legend{text-align:center;font-size:11px;color:#bda9e0;margin-top:18px}
 .legend b{color:#e7ddff}
+.taphint{text-align:center;font-size:11px;color:#a58fce;margin-top:6px}
 </style></head>
 <body><div class="wrap">
 <header><h1>🔥 Team Gorgeous</h1>
 <div class="sub">Shift Streak Scoreboard — post your start ▶ and end ■ every shift</div><div class="sub" id="upd" style="font-size:11px;opacity:.6"></div></header>
+<div class="celebrate" id="celebrate"></div>
+<div style="text-align:center"><button class="replaybtn" id="replaybtn" onclick="replayAll()">🎉 Replay today's celebrations</button></div>
 <div class="tabs"><div class="tab active" data-role="Waxer">Waxers</div><div class="tab" data-role="GSA">GSAs</div></div>
 <div class="weeknav"><button id="prev">◀</button><div class="wlabel" id="wlabel" title="Click to reset everyone to the current week"></div><button id="next">▶</button><button id="today" class="today">⟳ This week</button></div>
 <div class="navhint">Team arrows move everyone · each card's own ◀ ▶ scrolls just that person · ⟳ or click the week to re-sync</div>
 <div class="podium" id="podium"></div>
 <div class="grid" id="grid"></div>
+<div class="taphint" id="taphint" style="display:none">✨ tap a glowing card to replay its confetti ✨</div>
 <div class="legend">🔥 <b>streak</b> = days in a row you posted (start or end) · <b>complete</b> = both posted · <b>partial</b> = one posted · <b>best</b> = longest complete run ever · badges at 🥉3 ⭐7 🔥14 💎30 👑60</div>
 </div>
 <script>
 let DATA,LAST,role='Waxer',gWk=0;
-const cardWk={};            // person index -> week override
+let ACH=[],CELEB=new Set(),bannersExpanded=false;
+const cardWk={};
 const weekOf=idx=>(idx in cardWk)?cardWk[idx]:gWk;
 const dow=d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(d+'T00:00').getDay()];
 const md=d=>{const p=d.split('-');return p[1].replace(/^0/,'')+'/'+p[2].replace(/^0/,'')};
@@ -88,6 +103,107 @@ window.cPrev=i=>{const w=weekOf(i);if(w>0){cardWk[i]=w-1;render();}};
 window.cNext=i=>{const w=weekOf(i);if(w<LAST){cardWk[i]=w+1;render();}};
 window.cReset=i=>{delete cardWk[i];render();};
 function gGo(w){gWk=Math.max(0,Math.min(LAST,w));for(const k in cardWk)delete cardWk[k];render();}
+
+/* ================= Celebration engine (client-side, from data.json) ================= */
+const BADGES=[[60,'👑'],[30,'💎'],[14,'🔥'],[7,'⭐'],[3,'🥉']];
+const BLAB={'🥉':'3-day','⭐':'7-day','🔥':'14-day','💎':'30-day','👑':'60-day'};
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const AUTO_WIN=2, REPLAY_WIN=7;              // in the person's own WORKING days after the award
+const brank=e=>['','🥉','⭐','🔥','💎','👑'].indexOf(e);
+const badgeFor=s=>{for(const[t,e]of BADGES)if(s>=t)return e;return '';};
+const fmtDate=iso=>{const p=iso.split('-').map(Number);return MON[p[1]-1]+' '+p[2];};
+function computeAch(D){
+  const start=D.dataStart,end=D.dataEnd,out=[];
+  // team-perfect for the latest data day only
+  const tp=D.people.filter(p=>{const c=p.days[end];return c==='B'||c==='S'||c==='E'||c==='X';});
+  if(tp.length>=3 && tp.every(p=>p.days[end]!=='X')){
+    out.push({id:'teamperfect-'+end,type:'teamperfect',name:'',first:'',date:end,tier:'auto',after:0,badge:'',
+      text:'🎉 Perfect day — everyone who worked posted! 🙌 — '+fmtDate(end)});
+  }
+  D.people.forEach(p=>{
+    const dts=Object.keys(p.days).filter(d=>d>=start&&d<=end).sort();
+    const first=p.name.split(' ')[0];
+    let streak=0,run=0,longest=0,prevBadge='',prevLong=0,events=[];
+    dts.forEach(d=>{
+      const c=p.days[d];let k=null;
+      if(c==='B')k='B'; else if(c==='S'||c==='E')k='P'; else if(c==='X')k='X'; else return; // skip OFF/CLOSED/blank
+      const prevStreak=streak;
+      if(k==='B'||k==='P')streak++; else streak=0;
+      if(k==='B'){run++; if(run>longest)longest=run;} else run=0;
+      const badge=badgeFor(streak);
+      if(badge && brank(badge)>brank(prevBadge))
+        events.push({type:'badge',date:d,badge:badge,text:'🎉 '+first+' unlocked the '+badge+' '+BLAB[badge]+' badge!'});
+      else if(longest>prevLong && longest>=2)
+        events.push({type:'best',date:d,badge:'',text:'🎉 '+first+' set a new personal best — '+longest+'-day complete run!'});
+      else if(prevStreak===0 && streak>=1 && k!=='X')
+        events.push({type:'streak',date:d,badge:'',text:'🎉 Congrats to '+first+' on getting a streak going! 🔥'});
+      prevBadge=badge; prevLong=longest;
+    });
+    if(!events.length)return;
+    const pr={badge:3,best:2,streak:1};
+    events.sort((a,b)=> a.date<b.date?1:a.date>b.date?-1:(pr[b.type]-pr[a.type]));
+    const ev=events[0];
+    let after=0;
+    dts.forEach(d=>{ if(d>ev.date){const c=p.days[d]; if(c==='B'||c==='S'||c==='E'||c==='X')after++;} });
+    let tier=after<=AUTO_WIN?'auto':(after<=REPLAY_WIN?'replay':null);
+    if(!tier)return;
+    out.push({id:ev.type+'-'+p.name+'-'+ev.date,type:ev.type,name:p.name,first:first,date:ev.date,
+      tier:tier,after:after,badge:ev.badge||'',text:ev.text+' — '+fmtDate(ev.date)});
+  });
+  return out;
+}
+const autoList=()=>sortAch(ACH.filter(a=>a.tier==='auto'));
+function sortAch(list){const pr={teamperfect:4,badge:3,best:2,streak:1};
+  return list.slice().sort((a,b)=> (brank(b.badge)-brank(a.badge)) || (pr[b.type]-pr[a.type]) || (a.date<b.date?1:-1));}
+
+/* ---- Confetti ---- */
+const CFCOLORS=['#ff9a3c','#ff6ec7','#a78bfa','#42c767','#ffd86b'];
+const FOLLOWUP_MS=2600;
+const firedSession=new Set();
+function fireAt(el,big){if(!window.confetti||!el)return;const r=el.getBoundingClientRect();
+  const x=(r.left+r.width/2)/innerWidth,y=(r.top+r.height/2)/innerHeight;
+  confetti({particleCount:big?150:100,spread:big?95:72,startVelocity:46,ticks:210,scalar:1.05,colors:CFCOLORS,origin:{x,y}});
+  setTimeout(()=>confetti({particleCount:big?95:60,spread:big?115:98,startVelocity:34,ticks:200,scalar:.92,colors:CFCOLORS,origin:{x,y}}),FOLLOWUP_MS);}
+function fireTop(){if(!window.confetti)return;
+  confetti({particleCount:200,spread:130,startVelocity:55,ticks:230,scalar:1.1,colors:CFCOLORS,origin:{x:.5,y:.1}});
+  setTimeout(()=>confetti({particleCount:130,spread:150,startVelocity:42,ticks:210,scalar:.95,colors:CFCOLORS,origin:{x:.5,y:.12}}),FOLLOWUP_MS);}
+
+/* ---- Banners ---- */
+const CAP=5;
+function pillHTML(a){return '<div class="cbar" data-aid="'+a.id+'">'+a.text+'<button class="cx" onclick="dismissOne(\''+a.id.replace(/'/g,"\\'")+'\')" title="dismiss">✕</button></div>';}
+function renderBanners(list,expand){
+  const box=document.getElementById('celebrate');
+  let show=list,extra=0;
+  if(!expand && list.length>CAP){show=list.slice(0,CAP);extra=list.length-CAP;}
+  box.innerHTML=show.map(pillHTML).join('')+(extra?'<button class="morebtn" onclick="expandBanners()">+'+extra+' more celebrations 🎉</button>':'');
+  box.style.display=list.length?'flex':'none';
+}
+window.expandBanners=()=>{bannersExpanded=true;renderBanners(autoList(),true);};
+window.dismissOne=id=>{const el=document.querySelector('.cbar[data-aid="'+CSS.escape(id)+'"]');if(el)el.remove();
+  const box=document.getElementById('celebrate');if(!box.querySelector('.cbar'))box.style.display='none';};
+function flashPill(a){const box=document.getElementById('celebrate');box.style.display='flex';
+  let el=box.querySelector('.cbar[data-aid="'+CSS.escape(a.id)+'"]');
+  if(!el){box.insertAdjacentHTML('afterbegin',pillHTML(a));el=box.querySelector('.cbar[data-aid="'+CSS.escape(a.id)+'"]');}
+  el.classList.remove('pulse');void el.offsetWidth;el.classList.add('pulse');el.scrollIntoView({block:'nearest'});}
+window.cardTap=(ev,el)=>{if(ev.target.closest('button'))return;const nm=el.dataset.name;if(!CELEB.has(nm))return;
+  fireAt(el,false);const a=ACH.find(x=>x.name===nm);if(a)flashPill(a);};
+window.replayAll=()=>{
+  bannersExpanded=true;renderBanners(autoList(),true);
+  autoList().filter(a=>a.type==='teamperfect').forEach(()=>setTimeout(fireTop,200));
+  let n=0;
+  autoList().filter(a=>a.name).forEach(a=>{const el=document.querySelector('.card[data-name="'+a.name.replace(/"/g,'')+'"]');
+    if(el){n++;setTimeout(()=>fireAt(el,a.type==='badge'),200+n*300);}});
+};
+function celebrate(initial){
+  autoList().forEach(a=>{
+    if(firedSession.has(a.id))return;
+    if(a.type==='teamperfect'){ if(initial){firedSession.add(a.id);setTimeout(fireTop,320);} return; }
+    const el=document.querySelector('.card[data-name="'+a.name.replace(/"/g,'')+'"]');
+    if(el){firedSession.add(a.id);const dl=300+(firedSession.size*260);setTimeout(()=>fireAt(el,a.type==='badge'),dl);}
+  });
+}
+
+/* ================= Board render ================= */
 function render(){
   document.getElementById('wlabel').textContent='Team week: '+DATA.weeks[gWk].label;
   document.getElementById('prev').disabled=gWk<=0;
@@ -118,7 +234,7 @@ function render(){
     const prog=Math.round(p.progress*100);
     const nextTxt=p.toNext>0?`${p.toNext} day${p.toNext>1?'s':''} to ${p.nextEmoji}`:'max badge 👑';
     const reset=off?`<button class="rst" onclick="cReset(${idx})" title="Back to team week">↺</button>`:'';
-    g.innerHTML+=`<div class="card ${p.streak>=7?'hot':''}">
+    g.innerHTML+=`<div class="card ${p.streak>=7?'hot':''} ${CELEB.has(p.name)?'celebrant':''}" data-name="${p.name}" onclick="cardTap(event,this)">
       <div class="crow"><div class="nm">${p.name}</div><div class="badge">${p.badge||''}</div></div>
       <div class="streak"><span class="fire">🔥</span><span class="num">${p.streak}</span><span class="lbl">day streak</span></div>
       <div class="prog"><div style="width:${prog}%"></div></div><div class="ptxt">${nextTxt}</div>
@@ -134,18 +250,24 @@ function render(){
       <div class="days">${boxes}</div>
     </div>`;
   });
+  celebrate(false);
 }
 
 function init(){LAST=DATA.weeks.length-1;gWk=LAST;
-document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  t.classList.add('active');role=t.dataset.role;render();});
-document.getElementById('prev').onclick=()=>gGo(gWk-1);
-document.getElementById('next').onclick=()=>gGo(gWk+1);
-document.getElementById('today').onclick=()=>gGo(LAST);
-document.getElementById('wlabel').onclick=()=>{for(const k in cardWk)delete cardWk[k];render();};
-render();
-
+  ACH=computeAch(DATA);
+  CELEB=new Set(ACH.filter(a=>a.name).map(a=>a.name));
+  document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');role=t.dataset.role;render();});
+  document.getElementById('prev').onclick=()=>gGo(gWk-1);
+  document.getElementById('next').onclick=()=>gGo(gWk+1);
+  document.getElementById('today').onclick=()=>gGo(LAST);
+  document.getElementById('wlabel').onclick=()=>{for(const k in cardWk)delete cardWk[k];render();};
+  render();
+  renderBanners(autoList(),false);
+  if(CELEB.size){var _th=document.getElementById('taphint');if(_th)_th.style.display='block';}
+  if(autoList().length){var _rb=document.getElementById('replaybtn');if(_rb)_rb.style.display='inline-block';}
+  setTimeout(()=>celebrate(true),200);
 }
 const DATA_URL='https://raw.githubusercontent.com/dcavanau-wq/team-gorgeous-board/main/data.json';
 fetch(DATA_URL+'?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{DATA=d;init();
